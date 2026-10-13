@@ -680,7 +680,7 @@ function viewSettings(){
   return `<div class="wrap" style="max-width:720px"><div class="head"><div><h1 class="h1">Compte et paramètres</h1></div></div>
   <section class="sec"><div class="who"><div class="av">${esc((st.name||'É').trim().charAt(0).toUpperCase())}</div><div style="flex:1;min-width:0"><label class="sr" for="s-name">Prénom</label><input class="in" id="s-name" data-name placeholder="Ton prénom" value="${esc(st.name)}" maxlength="30"></div></div></section>
   <section class="sec"><h2>Emploi du temps</h2><p>Importe l’export de ton application (Time Calendar, ADE, Google Agenda…) au format <code>.ics</code>, ou un fichier <code>.csv</code> avec les colonnes Titre, Jour (lundi… ou une date), Début, Fin, Lieu.</p>
-    <div class="btns"><label class="btn" for="file-in" tabindex="0" id="imp-l">${ic('up')}Importer mon emploi du temps</label><input type="file" id="file-in" class="sr" accept=".ics,.csv,text/calendar,text/csv"><button class="btn ghost" data-act="sample">Charger l’exemple</button><button class="btn ghost" data-act="clearTT">Vider</button></div>
+    <div class="btns"><label class="btn" for="file-in" tabindex="0" id="imp-l">${ic('up')}Importer mon emploi du temps</label><input type="file" id="file-in" class="sr" accept=".ics,.csv,text/calendar,text/csv"><button class="btn ghost" data-act="sample">Charger l’exemple</button><button class="btn ghost" data-act="clearTT">Vider</button></div><form class="btns" style="margin-top:12px" data-url-form><label class="sr" for="url-in">Lien du calendrier</label><input class="in" id="url-in" type="url" required placeholder="https://…/calendrier.ics" style="flex:1;min-width:200px"><button class="btn ghost" type="submit">Importer le lien</button></form>
     ${U.msg?`<div class="msg ${U.msg.ok?'':'bad'}" role="status">${esc(U.msg.t)}</div>`:''}
     <p style="margin:12px 0 0">Actuellement : <b>${S.events.length?esc(im.label||'Importé')+' · '+S.events.length+' cours':'aucun cours'}</b></p></section>
   <section class="sec"><h2>Apparence</h2><p>Choisis le thème de l’application.</p><div class="seg" role="radiogroup" aria-label="Thème">${[['dark','Sombre'],['light','Clair'],['system','Système']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" data-act="theme" data-v="${k}">${l}</button>`).join('')}</div></section>
@@ -844,6 +844,28 @@ function init(){
     const nl=$('#now-l');if(nl&&U.view==='home'&&!U.sheet){render(true);}
   },30000);
 }
+document.addEventListener('submit',async e=>{
+  if(!e.target.matches('[data-url-form]'))return;
+  e.preventDefault();
+  let u=$('#url-in').value.trim().replace(/^webcal:/i,'https:');
+  const g=u.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
+  if(g)u=`https://raw.githubusercontent.com/${g[1]}/${g[2]}/${g[3]}`;
+  const tries=[u,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
+    'https://corsproxy.io/?url='+encodeURIComponent(u)];
+  let t=null;
+  for(const x of tries){
+    try{
+      const r=await fetch(x);if(!r.ok)continue;
+      const s=await r.text();
+      if(/BEGIN:VCALENDAR/i.test(s)||/\.csv(\?|$)/i.test(u)){t=s;break;}
+    }catch(err){}
+  }
+  if(t==null){U.msg={ok:false,t:'Lien inaccessible. Vérifie l’adresse, ou télécharge le fichier et importe-le directement.'};render(true);return;}
+  const csv=/\.csv(\?|$)/i.test(u);
+  doImport(new File([t],new URL(u).hostname+(csv?'.csv':'.ics')));
+});
 init();
 })();
 </script>
