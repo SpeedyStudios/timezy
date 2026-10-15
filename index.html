@@ -1,4 +1,14 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B4A53">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Timezy">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>Timezy</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Sans:opsz,wght@9..40,400..700&display=swap">
 <style>
@@ -81,8 +91,8 @@ h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
 .dchip.today b{color:var(--brand-ink)}
 .dchip.today::after{content:"";position:absolute;inset:2px;border-radius:14px;border:1.5px solid var(--brand-ink);opacity:.5;pointer-events:none}
 .dchip[aria-pressed="true"]{background:var(--brand);color:var(--on-brand)}
-.dchip[aria-pressed="true"] small{color:inherit;opacity:.8}.dchip[aria-pressed="true"] i{background:var(--on-brand)}
 .today[aria-pressed="true"] b {color: var(--on-brand);}
+.dchip[aria-pressed="true"] small{color:inherit;opacity:.8}.dchip[aria-pressed="true"] i{background:var(--on-brand)}
 .home-grid{display:grid;gap:24px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:820px){.home-grid{grid-template-columns:minmax(0,1fr) 320px;align-items:start}.next-banner{display:none!important}}
 @media(max-width:819px){.side{display:none}}
@@ -258,7 +268,29 @@ table.t th,table.t td{text-align:right;padding:4px 6px;border-bottom:1px solid v
 :root[data-theme="dark"] .toast{background:#2A5560}
 @media(min-width:1024px){.toast{bottom:32px}}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast{background:#2A5560}}
+
+/* Types d'échéances, rappels, accueil vide */
+.ev.slot{background:color-mix(in srgb,var(--c) 30%,var(--surface));border:1.5px solid var(--c)}
+.ev.slot.compact .k{flex:none}
+.dl-mark.rem .ic{fill:none;stroke:var(--c)}
+.rem-strip{display:grid;gap:8px;margin-bottom:14px}
+.rem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--c) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 40%,transparent);--c:var(--brand)}
+.rem-t{flex:1;min-width:0;display:flex;align-items:center;gap:10px;font-weight:600}
+.rem-t .ic{width:20px;height:20px;color:var(--c);flex:none}
+.rem-t span{min-width:0;display:block}.rem-t small{display:block;font-weight:400;color:var(--fg-2);font-size:13px}
+.kind{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-2)}
+.kind .ic{width:14px;height:14px;color:var(--c)}
+.welcome-ic{margin-bottom:14px;width:56px;height:56px}
+.welcome-ic .ic{width:28px;height:28px}
+.fld .seg{margin-bottom:0}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
 </style>
+<style>
+[hidden]{display:none!important}
+.topbar{padding-top:calc(8px + env(safe-area-inset-top,0px))}
+.bottom{padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+@media(min-width:1024px){.bottom{padding-bottom:16px}.topbar{padding-top:8px}}
+</style></head><body>
 <div id="app">
   <header class="topbar">
     <button class="icon-btn" id="btn-bell" data-act="bell" aria-label="Rappels et notifications"></button>
@@ -319,10 +351,11 @@ const ICONS={
 const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
 
 /* ---------- État ---------- */
-const KEY='cale-v1';
+const KEY='timezy-v2';
 let S=null;
 const U={view:'home',date:todayS(),exp:{},delId:null,scrollPending:true,form:null,themeTouched:false,msg:null,sheet:null};
-function load(){try{const j=localStorage.getItem(KEY);return j?JSON.parse(j):null}catch(e){return null}}
+function load(){try{const j=localStorage.getItem(KEY);if(j)return JSON.parse(j);
+  const old=localStorage.getItem('cale-v1');if(old){const o=JSON.parse(old);if(o&&o.importMeta&&o.importMeta.source==='fichier'){o.v=2;return o;}}}catch(e){}return null}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 const TPL={
@@ -338,28 +371,20 @@ function sampleCourses(){
     (TPL[dow]||[]).forEach(([s,e,title,loc])=>out.push({id:uid(),title,loc,date:d,s,e,color:colorFor(title)}));}
   return out;
 }
+/* Premier lancement : aucune donnée de démonstration. */
 function seed(){
-  const t=todayS();
-  const done=(title,desc,est,dueOff,dueT,color,doneOff,doneT,sess)=>{const id=uid();
-    return {dl:{id,title,desc,est,due:addD(t,dueOff),dueT,color,done:true,doneAt:ts(addD(t,doneOff),doneT)},
-      ss:sess.map(([o,s,e])=>({id:uid(),dl:id,date:addD(t,o),s,e,done:true}))}};
-  const h=[
-   done('Compte rendu d’anglais','Résumé de l’article + vocabulaire.',60,-2,1080,PAL[4],-2,900,[[-3,990,1050]]),
-   done('Exercices de C : pointeurs','Feuille de TD n°2, exercices 3 à 7.',120,-3,1080,PAL[1],-2,600,[[-4,990,1080],[-3,1110,1140]]),
-   done('TP Probabilités n°2','Lois usuelles, simulation sous R.',120,-4,1020,PAL[2],-5,1000,[[-6,990,1050],[-5,990,1050]]),
-   done('Mini-projet web : maquette','Maquette HTML/CSS de la page d’accueil.',180,-1,1320,PAL[0],-1,1290,[[-2,1020,1110],[-1,1080,1170]])
-  ];
-  const pend=[
-   {id:uid(),title:'Fiche de révision · Probabilités',desc:'Formules clés sur les lois usuelles, une page recto-verso.',est:60,due:addD(t,1),dueT:1080,color:PAL[5],done:false,doneAt:null},
-   {id:uid(),title:'Rapport de TP · Technologies du web',desc:'Page responsive et rapport de 3 pages (PDF).',est:240,due:addD(t,3),dueT:1080,color:PAL[0],done:false,doneAt:null},
-   {id:uid(),title:'Feuille d’exercices n°3 · Probabilités',desc:'Exercices sur la loi normale.',est:90,due:addD(t,2),dueT:1080,color:PAL[1],done:false,doneAt:null},
-   {id:uid(),title:'Projet C : tri fusion et tri rapide',desc:'Implémenter les deux tris et comparer les temps sur des tableaux de 10⁵ éléments.',est:360,due:addD(t,6),dueT:1200,color:PAL[4],done:false,doneAt:null},
-   {id:uid(),title:'Réviser l’algorithmique (contrôle)',desc:'Complexité, tris, listes chaînées, arbres.',est:300,due:addD(t,9),dueT:540,color:PAL[2],done:false,doneAt:null}
-  ];
-  return {v:1,events:sampleCourses(),deadlines:h.map(x=>x.dl).concat(pend),sessions:[].concat(...h.map(x=>x.ss)),unplanned:{},
-    settings:{theme:'system',name:'',dayStart:480,dayEnd:1200,lunchS:720,lunchE:810,maxSession:90,remindSession:true,remindDue:true},
-    readNotifs:[],importMeta:{source:'exemple',label:'Exemple (semaine type, licence informatique)'}};
+  return {v:2,events:[],deadlines:[],sessions:[],unplanned:{},
+    settings:{theme:'system',name:'',dayStart:480,dayEnd:1200,lunchS:720,lunchE:810,maxSession:90,remindSession:true,remindDue:true,reminderT:480,push:false},
+    readNotifs:[],pushed:[],importMeta:{source:'none',label:''},skipOnboarding:false};
 }
+/* Trois types d'éléments : deadline (défaut), créneau réservé, rappel du jour. */
+const isDl=d=>!d.kind||d.kind==='deadline';
+const DLS=()=>S.deadlines.filter(isDl);
+const KIND={deadline:['Échéance','flag'],slot:['Créneau','clock'],reminder:['Rappel','bell']};
+const kindOf=d=>d.kind||'deadline';
+const sortTs=d=>isDl(d)?ts(d.due,d.dueT):d.kind==='slot'?ts(d.due,d.s):ts(d.due,d.dueT>=0?d.dueT:0);
+const endTs=d=>d.kind==='slot'?ts(d.due,d.e):isDl(d)?ts(d.due,d.dueT):ts(d.due,1439);
+const isPast=d=>!isDl(d)&&endTs(d)<Date.now();
 
 /* ---------- Planificateur ---------- */
 const isLocked=(s,nowT)=>s.done||(ts(s.date,s.s)<=nowT&&ts(s.date,s.e)>nowT);
@@ -378,6 +403,7 @@ function computePlan(dls,keep,now){
   const busy={};const B=d=>busy[d]||(busy[d]=[]);
   S.events.forEach(e=>B(e.date).push([e.s-10,e.e+10]));
   keep.forEach(s=>B(s.date).push([s.s-15,s.e+15]));
+  S.deadlines.filter(x=>x.kind==='slot'&&!x.done).forEach(x=>B(x.due).push([x.s-10,x.e+10]));
   const out=[],unplanned={};
   const sorted=[...dls].sort((a,b)=>(a.due+fmtT(a.dueT)).localeCompare(b.due+fmtT(b.dueT)));
   for(const D of sorted){
@@ -423,13 +449,13 @@ function replan(){
   const now=new Date(),nowT=now.getTime();
   S.sessions=S.sessions.filter(s=>S.deadlines.some(d=>d.id===s.dl));
   const keep=S.sessions.filter(s=>s.done||ts(s.date,s.s)<=nowT);
-  const r=computePlan(S.deadlines.filter(d=>!d.done),keep,now);
+  const r=computePlan(DLS().filter(d=>!d.done),keep,now);
   S.sessions=keep.concat(r.sessions);S.unplanned=r.unplanned;
 }
 function previewPlan(cand){
   const now=new Date(),nowT=now.getTime();
   const keep=S.sessions.filter(s=>s.done||ts(s.date,s.s)<=nowT);
-  const r=computePlan(S.deadlines.filter(d=>!d.done).concat([cand]),keep,now);
+  const r=computePlan(DLS().filter(d=>!d.done).concat([cand]),keep,now);
   return {sessions:r.sessions.filter(s=>s.dl===cand.id).sort((a,b)=>(a.date+fmtT(a.s)).localeCompare(b.date+fmtT(b.s))),left:r.unplanned[cand.id]||0};
 }
 const dueTs=d=>ts(d.due,d.dueT);
@@ -509,7 +535,7 @@ async function doImport(file){
     if(!ev.length)throw new Error('Aucun cours trouvé dans ce fichier. Vérifie qu’il s’agit d’un export .ics ou .csv.');
     S.events=ev;const ds=ev.map(e=>e.date).sort();
     S.importMeta={source:'fichier',label:file.name,count:ev.length,from:ds[0],to:ds[ds.length-1]};
-    replan();save();U.msg={ok:true,t:`${ev.length} cours importés depuis « ${file.name} » (du ${dayShort(ds[0])} au ${dayShort(ds[ds.length-1])}). Les séances de travail ont été replanifiées.`};
+    replan();save();toast(`${ev.length} cours importés`);U.msg={ok:true,t:`${ev.length} cours importés depuis « ${file.name} » (du ${dayShort(ds[0])} au ${dayShort(ds[ds.length-1])}). Les séances de travail ont été replanifiées.`};
   }catch(err){U.msg={ok:false,t:err.message||'Import impossible.'};}
   render();
 }
@@ -517,20 +543,29 @@ async function doImport(file){
 /* ---------- Rappels ---------- */
 const rel=ms=>{const m=Math.round(ms/6e4);if(m<60)return `${Math.max(m,1)} min`;const h=Math.round(m/60);if(h<48)return `${h} h`;return `${Math.round(h/24)} j`;};
 function notifs(){
-  const now=new Date(),nowT=now.getTime(),t=todayS(),out=[];
-  for(const d of S.deadlines.filter(x=>!x.done)){
+  const now=new Date(),nowT=now.getTime(),t=todayS(),nm=now.getHours()*60+now.getMinutes(),out=[];
+  for(const d of DLS().filter(x=>!x.done)){
     const diff=dueTs(d)-nowT;
     if(diff<0)out.push({id:'od-'+d.id,ic:'alert',bad:1,t:`En retard : ${d.title}`,s:`Échéance dépassée depuis ${rel(-diff)}`,go:'deadlines'});
-    else if(S.settings.remindDue&&diff<48*36e5)out.push({id:'due-'+d.id+(diff<24*36e5?'a':'b'),ic:'flag',t:diff<24*36e5?`Échéance dans ${rel(diff)} : ${d.title}`:`Échéance demain : ${d.title}`,s:`${dayLong(d.due)} à ${fmtT(d.dueT)}`,go:'deadlines'});
+    else if(S.settings.remindDue&&diff<48*36e5)out.push({id:'due-'+d.id+(diff<24*36e5?'a':'b'),ic:'flag',push:diff<24*36e5,t:diff<24*36e5?`Échéance dans ${rel(diff)} : ${d.title}`:`Échéance demain : ${d.title}`,s:`${dayLong(d.due)} à ${fmtT(d.dueT)}`,go:'deadlines'});
   }
   for(const s of S.sessions.filter(x=>x.date===t&&!x.done)){
     const d=dlOf(s.dl);if(!d)continue;const st=ts(s.date,s.s),en=ts(s.date,s.e);
-    if(S.settings.remindSession&&st>nowT&&st-nowT<=36e5)out.push({id:'ss-'+s.id,ic:'work',t:`Séance de travail dans ${rel(st-nowT)}`,s:`${d.title} · ${fmtT(s.s)}–${fmtT(s.e)}`,go:'home'});
-    else if(st<=nowT&&en>nowT)out.push({id:'now-'+s.id,ic:'work',t:'Séance en cours',s:`${d.title} · jusqu’à ${fmtT(s.e)}`,go:'home'});
+    if(S.settings.remindSession&&st>nowT&&st-nowT<=36e5)out.push({id:'ss-'+s.id,ic:'work',push:1,t:`Séance de travail dans ${rel(st-nowT)}`,s:`${d.title} · ${fmtT(s.s)}–${fmtT(s.e)}`,go:'home'});
+    else if(st<=nowT&&en>nowT)out.push({id:'now-'+s.id,ic:'work',push:1,t:'Séance en cours',s:`${d.title} · jusqu’à ${fmtT(s.e)}`,go:'home'});
     else if(en<=nowT)out.push({id:'miss-'+s.id,ic:'alert',bad:1,t:'Séance manquée, temps replanifié',s:`${d.title} · ${fmtT(s.s)}–${fmtT(s.e)}`,go:'deadlines'});
   }
+  for(const x of S.deadlines.filter(d=>d.kind==='slot'&&!d.done&&d.due===t)){
+    const st=ts(x.due,x.s),en=ts(x.due,x.e);
+    if(S.settings.remindSession&&st>nowT&&st-nowT<=36e5)out.push({id:'sl-'+x.id,ic:'clock',push:1,t:`Créneau dans ${rel(st-nowT)} : ${x.title}`,s:`${fmtT(x.s)}–${fmtT(x.e)}`,go:'home'});
+    else if(st<=nowT&&en>nowT)out.push({id:'sln-'+x.id,ic:'clock',push:1,t:`Créneau en cours : ${x.title}`,s:`jusqu’à ${fmtT(x.e)}`,go:'home'});
+  }
+  for(const x of S.deadlines.filter(d=>d.kind==='reminder'&&!d.done&&d.due===t)){
+    const at=x.dueT>=0?x.dueT:S.settings.reminderT;
+    if(nm>=at)out.push({id:'rem-'+x.id+t,ic:'bell',push:1,t:`Rappel : ${x.title}`,s:x.dueT>=0?`Aujourd’hui à ${fmtT(x.dueT)}${x.desc?' · '+x.desc:''}`:(x.desc||'Aujourd’hui'),go:'home'});
+  }
   for(const e of S.events.filter(x=>x.date===t)){const st=ts(e.date,e.s);
-    if(st>nowT&&st-nowT<=36e5)out.push({id:'co-'+e.id,ic:'book',t:`Cours dans ${rel(st-nowT)} : ${e.title}`,s:`${fmtT(e.s)}${e.loc?' · '+e.loc:''}`,go:'home'});}
+    if(st>nowT&&st-nowT<=36e5)out.push({id:'co-'+e.id,ic:'book',push:1,t:`Cours dans ${rel(st-nowT)} : ${e.title}`,s:`${fmtT(e.s)}${e.loc?' · '+e.loc:''}`,go:'home'});}
   for(const [id,m] of Object.entries(S.unplanned||{})){const d=dlOf(id);if(d&&!d.done)out.push({id:'unp-'+id+m,ic:'alert',bad:1,t:`Pas assez de temps libre pour « ${d.title} »`,s:`Il manque ${fmtDur(m)} avant la date limite. Repousse l’échéance ou réduis le temps estimé.`,go:'deadlines'});}
   return out;
 }
@@ -540,7 +575,7 @@ const unread=()=>notifs().filter(n=>!S.readNotifs.includes(n.id)).length;
 function weekStats(){
   const ws=monday(todayS()),nowT=Date.now();
   return [0,1,2,3,4,5,6].map(i=>{const date=addD(ws,i);
-    return {date,course:sum(S.events.filter(e=>e.date===date),e=>e.e-e.s)/60,
+    return {date,course:(sum(S.events.filter(e=>e.date===date),e=>e.e-e.s)+sum(S.deadlines.filter(x=>x.kind==='slot'&&!x.done&&x.due===date),x=>x.e-x.s))/60,
       done:sum(S.sessions.filter(s=>s.date===date&&s.done),s=>s.e-s.s)/60,
       plan:sum(S.sessions.filter(s=>s.date===date&&!s.done&&ts(s.date,s.e)>nowT),s=>s.e-s.s)/60};});
 }
@@ -559,77 +594,108 @@ function renderShell(){
 function tickClock(){const n=new Date();$('#clk').textContent=`${pad(n.getHours())}:${pad(n.getMinutes())}`;$('#clk-d').textContent=fmt(n,{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
 function toast(t){const r=$('#toast-root');r.innerHTML=`<div class="toast" role="status">${esc(t)}</div>`;clearTimeout(toast.h);toast.h=setTimeout(()=>r.innerHTML='',3200);}
 
+/* ---------- Import (bloc partagé accueil vide / paramètres) ---------- */
+const urlForm=()=>`<form class="btns" style="margin-top:12px" data-url-form><label class="sr" for="url-in">Lien du calendrier</label><input class="in" id="url-in" type="url" required placeholder="https://…/calendrier.ics" style="flex:1;min-width:200px"><button class="btn ghost" type="submit">Importer le lien</button></form>`;
+const msgBox=()=>U.msg?`<div class="msg ${U.msg.ok?'':'bad'}" role="status">${esc(U.msg.t)}</div>`:'';
+function viewWelcome(){
+  return `<div class="wrap" style="max-width:560px"><section class="sec" style="margin-top:8px;padding:24px 20px">
+    <div class="av welcome-ic">${ic('clock')}</div>
+    <h1 class="h1" style="margin-bottom:8px">Bienvenue sur Timezy</h1>
+    <p style="font-size:15px">Charge ton emploi du temps pour commencer. Timezy y place tes cours, puis répartit tes devoirs dans les créneaux libres.</p>
+    <div class="btns"><label class="btn" for="file-in" tabindex="0" id="imp-l">${ic('up')}Importer un fichier</label><input type="file" id="file-in" class="sr" accept=".ics,.csv,text/calendar,text/csv"></div>
+    ${urlForm()}${msgBox()}
+    <p style="margin:14px 0 0;font-size:13px">Fichier <code>.ics</code> (Time Calendar, ADE, Google Agenda…) ou <code>.csv</code>. Un lien de planning ADE ou un lien GitHub vers un <code>.ics</code> fonctionne aussi.</p>
+    <div class="btns" style="margin-top:12px"><button class="btn ghost sm" data-act="skip">Passer pour l’instant</button></div></section></div>`;
+}
+
 /* ---------- Accueil ---------- */
 function layoutCols(items){
   items.sort((a,b)=>a.s-b.s||b.e-a.e);const res=[];let cl=[],cEnd=-1;
   const flush=()=>{if(!cl.length)return;const cols=[];cl.forEach(it=>{let c=cols.findIndex(e=>e<=it.s);if(c<0){c=cols.length;cols.push(0);}cols[c]=it.e;it.col=c;});cl.forEach(it=>it.cols=cols.length);res.push(...cl);cl=[];cEnd=-1;};
   items.forEach(it=>{if(cl.length&&it.s>=cEnd)flush();cl.push(it);cEnd=Math.max(cEnd,it.e);});flush();return res;
 }
+const plural=(n,w)=>`${n} ${w}${n>1?'s':''}`;
 function viewHome(){
+  if(!S.events.length&&!S.deadlines.length&&!S.skipOnboarding)return viewWelcome();
   const sel=U.date,today=todayS(),nowT=Date.now(),nm=nowMin();
-  const courses=S.events.filter(e=>e.date===sel),sess=S.sessions.filter(s=>s.date===sel&&dlOf(s.dl)),dls=S.deadlines.filter(d=>!d.done&&d.due===sel);
-  const items=[...courses.map(e=>({k:'c',o:e,s:e.s,e:e.e})),...sess.map(s=>({k:'s',o:s,s:s.s,e:s.e}))];
+  const courses=S.events.filter(e=>e.date===sel),sess=S.sessions.filter(s=>s.date===sel&&dlOf(s.dl));
+  const onDay=S.deadlines.filter(d=>!d.done&&d.due===sel);
+  const dls=onDay.filter(isDl),slots=onDay.filter(d=>d.kind==='slot'),rems=onDay.filter(d=>d.kind==='reminder');
+  const remAll=rems.filter(r=>!(r.dueT>=0)),remT=rems.filter(r=>r.dueT>=0);
+  const items=[...courses.map(e=>({k:'c',o:e,s:e.s,e:e.e})),...sess.map(s=>({k:'s',o:s,s:s.s,e:s.e})),...slots.map(x=>({k:'x',o:x,s:x.s,e:x.e}))];
   const T0=Math.min(420,Math.floor(Math.min(...items.map(i=>i.s),1e4)/60)*60),T1=Math.max(1320,Math.ceil(Math.max(...items.map(i=>i.e),0)/60)*60);
   const H=(T1-T0)/60;
   const px=m=>`calc((${m-T0}) * var(--hh) / 60)`;
   let hours='',lines='';
   for(let h=T0/60;h<=T1/60;h++){hours+=`<span style="top:${px(h*60)}">${pad(h)}:00</span>`;lines+=`<div class="tl-l" style="top:${px(h*60)}"></div>`;}
   const evs=layoutCols(items).map(it=>{
-    const o=it.o,short=it.e-it.s<55,style=`--c:${it.k==='c'?o.color:dlOf(o.dl).color};top:${px(it.s)};height:calc(${it.e-it.s} * var(--hh) / 60 - 2px);left:calc(${it.col} * 100% / ${it.cols} + 3px);width:calc(100% / ${it.cols} - 6px)`;
+    const o=it.o,short=it.e-it.s<55,col=it.k==='s'?dlOf(o.dl).color:o.color,
+      style=`--c:${col};top:${px(it.s)};height:calc(${it.e-it.s} * var(--hh) / 60 - 2px);left:calc(${it.col} * 100% / ${it.cols} + 3px);width:calc(100% / ${it.cols} - 6px)`;
     if(it.k==='c')return `<button class="ev course ${short?'compact':''}" style="${style}" data-act="ev" data-k="c" data-id="${o.id}"><span class="t">${esc(o.title)}</span><span class="m">${fmtT(o.s)}–${fmtT(o.e)}${o.loc?' · '+esc(o.loc):''}</span></button>`;
+    if(it.k==='x')return `<button class="ev slot ${short?'compact':''}" style="${style}" data-act="ev" data-k="x" data-id="${o.id}"><span class="k">${ic('clock')}Créneau</span><span class="t">${esc(o.title)}</span><span class="m">${fmtT(o.s)}–${fmtT(o.e)}</span></button>`;
     const d=dlOf(o.dl),missed=!o.done&&ts(o.date,o.e)<=nowT;
     return `<button class="ev sess ${o.done?'done':''} ${missed?'missed':''} ${short?'compact':''}" style="${style}" data-act="ev" data-k="s" data-id="${o.id}"><span class="k">${o.done?ic('check'):ic('work')}${o.done?'Fait':missed?'Manquée':'Travail'}</span><span class="t">${esc(d.title)}</span><span class="m">${fmtT(o.s)}–${fmtT(o.e)}</span></button>`;
   }).join('');
-  const marks=dls.sort((a,b)=>a.dueT-b.dueT).map((d,i)=>`<div class="dl-mark" style="--c:${d.color};top:${px(Math.min(Math.max(d.dueT,T0+10),T1-10))}"><button data-act="goDl" data-id="${d.id}" style="top:${-13+i*28}px">${ic('flag')}<span>Rendu ${fmtT(d.dueT)} · ${esc(d.title)}</span></button></div>`).join('');
+  const marks=[...dls.map(d=>({d,t:d.dueT,r:0})),...remT.map(d=>({d,t:d.dueT,r:1}))].sort((a,b)=>a.t-b.t).map((x,i)=>`<div class="dl-mark ${x.r?'rem':''}" style="--c:${x.d.color};top:${px(Math.min(Math.max(x.t,T0+10),T1-10))}"><button data-act="goDl" data-id="${x.d.id}" style="top:${-13+i*28}px">${ic(x.r?'bell':'flag')}<span>${x.r?'Rappel':'Rendu'} ${fmtT(x.t)} · ${esc(x.d.title)}</span></button></div>`).join('');
   const nowL=sel===today&&nm>=T0&&nm<=T1?`<div class="now-l" id="now-l" style="top:${px(nm)}"></div>`:'';
   const ws=monday(sel);
   const strip=[0,1,2,3,4,5,6].map(i=>{const d=addD(ws,i);const has=S.events.some(e=>e.date===d)||S.deadlines.some(x=>!x.done&&x.due===d)||S.sessions.some(s=>s.date===d);
     return `<button class="dchip ${d===today?'today':''} ${has?'has':''}" data-act="day" data-d="${d}" aria-pressed="${d===sel}" aria-label="${dayLong(d)}"><small>${fmt(pD(d),{weekday:'short'}).replace('.','')}</small><b>${pD(d).getDate()}</b><i></i></button>`;}).join('');
-  const up=S.deadlines.filter(d=>!d.done).sort((a,b)=>dueTs(a)-dueTs(b));
+  const up=S.deadlines.filter(d=>!d.done&&!isPast(d)).sort((a,b)=>sortTs(a)-sortTs(b));
   const nxt=up[0];
   const todaySess=S.sessions.filter(s=>s.date===today&&dlOf(s.dl));
-  const side=`<aside class="side"><section class="card"><h3>Prochaines échéances</h3>${up.slice(0,5).map(d=>`<button class="mini" style="--c:${d.color}" data-act="goDl" data-id="${d.id}"><i class="dot"></i><div><b>${esc(d.title)}</b><small>${relDue(d)}</small></div></button>`).join('')||'<p class="sub">Rien à rendre. Profites-en !</p>'}
-    <button class="btn ghost sm" style="margin-top:10px" data-act="nav" data-v="deadlines">Voir toutes les échéances</button></section>
+  const side=`<aside class="side"><section class="card"><h3>À venir</h3>${up.slice(0,5).map(d=>`<button class="mini" style="--c:${d.color}" data-act="goDl" data-id="${d.id}"><i class="dot"></i><div><b>${esc(d.title)}</b><small>${KIND[kindOf(d)][0]} · ${relDue(d)}</small></div></button>`).join('')||'<p class="sub">Rien de prévu. Profites-en !</p>'}
+    <button class="btn ghost sm" style="margin-top:10px" data-act="nav" data-v="deadlines">Voir tout</button></section>
     <section class="card"><h3>Aujourd’hui</h3><p class="sub" style="margin:0">${sum(todaySess.filter(s=>s.done),s=>s.e-s.s)?fmtDur(sum(todaySess.filter(s=>s.done),s=>s.e-s.s)):'0 min'} de travail fait sur ${fmtDur(sum(todaySess,s=>s.e-s.s))} prévus.</p></section></aside>`;
+  const remBlock=remAll.length?`<div class="rem-strip">${remAll.map(r=>`<div class="rem" style="--c:${r.color}"><button class="mini-chk" role="checkbox" aria-checked="false" aria-label="Marquer « ${esc(r.title)} » comme fait" data-act="toggle" data-id="${r.id}">${ic('check')}</button><button class="rem-t" data-act="goDl" data-id="${r.id}">${ic('bell')}<span><b>${esc(r.title)}</b>${r.desc?`<small>${esc(r.desc)}</small>`:''}</span></button></div>`).join('')}</div>`:'';
+  const hint=!S.events.length?`<button class="next-banner" data-act="settings">${ic('up')}<span>Importe ton emploi du temps pour voir tes cours ici</span></button>`:'';
   return `<div class="wrap"><div class="home-grid"><div style="min-width:0">
     <div class="strip"><button class="icon-btn" data-act="week" data-n="-1" aria-label="Semaine précédente">${ic('left')}</button><div class="days">${strip}</div><button class="icon-btn" data-act="week" data-n="1" aria-label="Semaine suivante">${ic('right')}</button></div>
-    ${nxt?`<button class="next-banner" data-act="goDl" data-id="${nxt.id}">${ic('flag')}<span>Prochaine échéance : ${esc(nxt.title)} · ${relDue(nxt)}</span></button>`:''}
-    <div class="chips"><span class="chip">${dayLong(sel)}</span><span class="chip">${courses.length} cours</span><span class="chip">${sess.length} séance${sess.length>1?'s':''} de travail</span><span class="chip">${dls.length} échéance${dls.length>1?'s':''}</span>${sel!==today?'<button class="chip" data-act="day" data-d="'+today+'" style="background:var(--brand-soft);color:var(--brand-ink)">Revenir à aujourd’hui</button>':''}</div>
+    ${hint}${nxt?`<button class="next-banner" data-act="goDl" data-id="${nxt.id}">${ic(KIND[kindOf(nxt)][1])}<span>${KIND[kindOf(nxt)][0]} : ${esc(nxt.title)} · ${relDue(nxt)}</span></button>`:''}
+    <div class="chips"><span class="chip">${dayLong(sel)}</span><span class="chip">${courses.length} cours</span><span class="chip">${plural(sess.length,'séance')} de travail</span>${dls.length?`<span class="chip">${plural(dls.length,'échéance')}</span>`:''}${slots.length?`<span class="chip">${slots.length} créneau${slots.length>1?'x':''}</span>`:''}${rems.length?`<span class="chip">${plural(rems.length,'rappel')}</span>`:''}${sel!==today?'<button class="chip" data-act="day" data-d="'+today+'" style="background:var(--brand-soft);color:var(--brand-ink)">Revenir à aujourd’hui</button>':''}</div>
+    ${remBlock}
     <div class="tl" style="height:calc(${H} * var(--hh))"><div class="tl-h">${hours}</div><div class="tl-g">${lines}${evs}${marks}${nowL}</div></div>
-    ${!items.length&&!dls.length?'<p class="empty" style="margin-top:12px">Journée libre. Ajoute une échéance ou importe ton emploi du temps dans les paramètres.</p>':''}
+    ${!items.length&&!dls.length&&!rems.length?'<p class="empty" style="margin-top:12px">Journée libre. Ajoute une échéance, un créneau ou un rappel depuis l’onglet Échéances.</p>':''}
   </div>${side}</div></div>`;
 }
 function relDue(d){
-  const n=diffD(todayS(),d.due),t=dueTs(d)-Date.now();
-  if(t<0)return `en retard de ${rel(-t)}`;
-  return `${n===0?'aujourd’hui':n===1?'demain':fmt(pD(d.due),{weekday:'long',day:'numeric',month:'short'})} à ${fmtT(d.dueT)}`;
+  const n=diffD(todayS(),d.due),day=n===0?'aujourd’hui':n===1?'demain':fmt(pD(d.due),{weekday:'long',day:'numeric',month:'short'});
+  if(d.kind==='slot')return `${day} de ${fmtT(d.s)} à ${fmtT(d.e)}`;
+  if(d.kind==='reminder')return d.dueT>=0?`${day} à ${fmtT(d.dueT)}`:day;
+  const t=dueTs(d)-Date.now();if(t<0)return `en retard de ${rel(-t)}`;
+  return `${day} à ${fmtT(d.dueT)}`;
 }
 
-/* ---------- Échéances ---------- */
+/* ---------- Échéances (échéance · créneau · rappel) ---------- */
 function viewDeadlines(){
   const now=Date.now(),t=todayS();
-  const pend=S.deadlines.filter(d=>!d.done).sort((a,b)=>dueTs(a)-dueTs(b)),dn=S.deadlines.filter(d=>d.done).sort((a,b)=>dueTs(b)-dueTs(a));
+  const live=S.deadlines.filter(d=>!d.done&&!isPast(d)).sort((a,b)=>sortTs(a)-sortTs(b));
+  const dn=S.deadlines.filter(d=>d.done||isPast(d)).sort((a,b)=>sortTs(b)-sortTs(a));
+  const late=live.filter(d=>isDl(d)&&dueTs(d)<now),rest=live.filter(d=>!late.includes(d));
   const groups=[];
-  const late=pend.filter(d=>dueTs(d)<now);if(late.length)groups.push({late:1,label:'En retard',sub:'',items:late});
-  pend.filter(d=>dueTs(d)>=now).forEach(d=>{let g=groups.find(x=>x.key===d.due);if(!g){const n=diffD(t,d.due);g={key:d.due,label:n===0?'Aujourd’hui':n===1?'Demain':dayLong(d.due),sub:n<2?dayLong(d.due):'',items:[]};groups.push(g);}g.items.push(d);});
+  if(late.length)groups.push({late:1,label:'En retard',sub:'',items:late});
+  rest.forEach(d=>{let g=groups.find(x=>x.key===d.due);if(!g){const n=diffD(t,d.due);g={key:d.due,label:n===0?'Aujourd’hui':n===1?'Demain':dayLong(d.due),sub:n<2?dayLong(d.due):'',items:[]};groups.push(g);}g.items.push(d);});
   const card=d=>{
-    const dm=doneMin(d),pct=Math.min(100,Math.round(dm/d.est*100)),ss=S.sessions.filter(s=>s.dl===d.id).sort((a,b)=>(a.date+fmtT(a.s)).localeCompare(b.date+fmtT(b.s)));
-    const upc=ss.filter(s=>!s.done&&ts(s.date,s.e)>now).length,open=U.exp[d.id],un=(S.unplanned||{})[d.id];
+    const k=kindOf(d),dl=isDl(d);
+    const dm=dl?doneMin(d):0,pct=dl?Math.min(100,Math.round(dm/d.est*100)):0,ss=dl?S.sessions.filter(s=>s.dl===d.id).sort((a,b)=>(a.date+fmtT(a.s)).localeCompare(b.date+fmtT(b.s))):[];
+    const upc=ss.filter(s=>!s.done&&ts(s.date,s.e)>now).length,open=U.exp[d.id]&&dl,un=dl?(S.unplanned||{})[d.id]:0;
+    const meta=dl?`<span>avant ${fmtT(d.dueT)}</span><span>${fmtDur(d.est)} estimées</span>${d.done?'':`<span>${plural(upc,'séance')} planifiée${upc>1?'s':''}</span>`}`
+      :k==='slot'?`<span>${fmtT(d.s)}–${fmtT(d.e)}</span><span>${fmtDur(d.e-d.s)}</span>`:`<span>${d.dueT>=0?'à '+fmtT(d.dueT):'toute la journée'}</span>`;
     return `<article class="dl ${d.done?'done':''}" style="--c:${d.color}">
-      <button class="chk" role="checkbox" aria-checked="${d.done}" aria-label="Marquer « ${esc(d.title)} » comme ${d.done?'à faire':'faite'}" data-act="toggle" data-id="${d.id}">${ic('check')}</button>
-      <div class="dl-b" data-act="expand" data-id="${d.id}"><div class="dl-t">${esc(d.title)}</div>
-        <div class="dl-m"><span>avant ${fmtT(d.dueT)}</span><span>${fmtDur(d.est)} estimées</span>${d.done?'':`<span>${upc} séance${upc>1?'s':''} planifiée${upc>1?'s':''}</span>`}</div>
+      <button class="chk" role="checkbox" aria-checked="${d.done}" aria-label="Marquer « ${esc(d.title)} » comme ${d.done?'à faire':'fait'}" data-act="toggle" data-id="${d.id}">${ic('check')}</button>
+      <div class="dl-b" data-act="expand" data-id="${d.id}"><div class="kind">${ic(KIND[k][1])}${KIND[k][0]}</div><div class="dl-t">${esc(d.title)}</div>
+        <div class="dl-m">${meta}</div>
         ${d.desc?`<p class="dl-d">${esc(d.desc)}</p>`:''}
-        ${d.done?'':`<div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Avancement"><i style="width:${pct}%"></i></div>`}
+        ${dl&&!d.done?`<div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Avancement"><i style="width:${pct}%"></i></div>`:''}
         ${un?`<div class="warn">${ic('alert')}<span>Il manque ${fmtDur(un)} de temps libre avant la date limite. Repousse la date ou réduis le temps estimé.</span></div>`:''}
         ${open&&!d.done?`<div class="ses">${ss.filter(s=>ts(s.date,s.e)>now||s.done).map(s=>`<div class="ses-r ${s.done?'done':''}"><span style="white-space:nowrap">${dayShort(s.date)} · ${fmtT(s.s)}–${fmtT(s.e)}</span><button class="mini-chk" role="checkbox" aria-checked="${s.done}" aria-label="Séance faite" data-act="sdone" data-id="${s.id}">${ic('check')}</button></div>`).join('')||'<p class="sub">Aucune séance à venir.</p>'}</div>`:''}
       </div>
       <button class="icon-btn del ${U.delId===d.id?'sure':''}" data-act="del" data-id="${d.id}" aria-label="Supprimer « ${esc(d.title)} »">${U.delId===d.id?'Supprimer ?':ic('trash')}</button></article>`;};
-  return `<div class="wrap"><div class="head"><div><h1 class="h1">Échéances</h1><p class="sub">${pend.length} à faire · ${dn.length} faite${dn.length>1?'s':''}</p></div><button class="btn hide-s" data-act="add">${ic('plus')}Nouvelle échéance</button></div>
-   ${groups.map(g=>`<section class="grp"><div class="grp-h ${g.late?'late':''}"><h2>${g.label}</h2>${g.sub?`<small>${g.sub}</small>`:''}<small>${g.items.length}</small></div><div class="list">${g.items.map(card).join('')}</div></section>`).join('')||'<p class="empty" style="margin-top:12px">Aucune échéance à venir. Ajoute-en une avec le bouton +.</p>'}
-   ${dn.length?`<details class="fold" ${U.exp._done?'open':''}><summary data-act="foldDone">Terminées (${dn.length})</summary><div class="list" style="margin-top:8px">${dn.map(card).join('')}</div></details>`:''}</div>`;
+  return `<div class="wrap"><div class="head"><div><h1 class="h1">Échéances</h1><p class="sub">${live.length} à venir · ${dn.length} terminé${dn.length>1?'s':''}</p></div><button class="btn hide-s" data-act="add">${ic('plus')}Ajouter</button></div>
+   ${groups.map(g=>`<section class="grp"><div class="grp-h ${g.late?'late':''}"><h2>${g.label}</h2>${g.sub?`<small>${g.sub}</small>`:''}<small>${g.items.length}</small></div><div class="list">${g.items.map(card).join('')}</div></section>`).join('')||'<p class="empty" style="margin-top:12px">Rien de prévu. Ajoute une échéance, un créneau (ex. sport de 19h à 20h) ou un rappel (ex. prévoir le pique-nique) avec le bouton +.</p>'}
+   ${dn.length?`<details class="fold" ${U.exp._done?'open':''}><summary data-act="foldDone">Terminés et passés (${dn.length})</summary><div class="list" style="margin-top:8px">${dn.map(card).join('')}</div></details>`:''}</div>`;
 }
-const fab=()=>U.view==='deadlines'?`<button class="btn fab" data-act="add" aria-label="Ajouter une échéance">${ic('plus')}Ajouter</button>`:'';
+const fab=()=>U.view==='deadlines'?`<button class="btn fab" data-act="add" aria-label="Ajouter">${ic('plus')}Ajouter</button>`:'';
 
 /* ---------- Statistiques ---------- */
 function chartWeek(w){
@@ -643,12 +709,12 @@ function chartWeek(w){
 }
 function viewStats(){
   const t=todayS(),now=Date.now(),w=weekStats();
-  const dn=S.deadlines.filter(d=>d.done),late=S.deadlines.filter(d=>!d.done&&dueTs(d)<now);
+  const dn=DLS().filter(d=>d.done),late=DLS().filter(d=>!d.done&&dueTs(d)<now);
   const onTime=dn.filter(d=>d.doneAt<=dueTs(d)).length,denom=dn.length+late.length,rate=denom?Math.round(onTime/denom*100):null;
   const weekDone=sum(w,d=>d.done),weekPlan=sum(w,d=>d.plan);
-  const pend=S.deadlines.filter(d=>!d.done).sort((a,b)=>dueTs(a)-dueTs(b));
+  const pend=DLS().filter(d=>!d.done).sort((a,b)=>dueTs(a)-dueTs(b));
   const remain=sum(pend,d=>Math.max(0,d.est-doneMin(d)));
-  const load=[];for(let i=0;i<14;i++){const d=addD(t,i);const m=sum(S.events.filter(e=>e.date===d),e=>e.e-e.s)+sum(S.sessions.filter(s=>s.date===d&&!s.done&&ts(s.date,s.e)>now),s=>s.e-s.s);load.push({d,m});}
+  const load=[];for(let i=0;i<14;i++){const d=addD(t,i);const m=sum(S.events.filter(e=>e.date===d),e=>e.e-e.s)+sum(S.sessions.filter(s=>s.date===d&&!s.done&&ts(s.date,s.e)>now),s=>s.e-s.s);load.push({d,m:m+sum(S.deadlines.filter(x=>x.kind==='slot'&&!x.done&&x.due===d),x=>x.e-x.s)});}
   const busiest=[...load].sort((a,b)=>b.m-a.m)[0],free=load.find((x,i)=>i>0&&x.m===0);
   const ringR=34,C=2*Math.PI*ringR;
   const rows=w.map(d=>`<tr><td>${dayShort(d.date)}</td><td>${fmtDur(d.course*60)}</td><td>${fmtDur(d.done*60)}</td><td>${fmtDur(d.plan*60)}</td></tr>`).join('');
@@ -659,12 +725,12 @@ function viewStats(){
    <div class="kpi"><small>Série en cours</small><b>${streak()} jour${streak()>1?'s':''}</b><em>au moins une séance faite par jour</em></div>
    <div class="kpi"><small>Reste à planifier</small><b>${fmtDur(remain)}</b><em>${pend.length} échéance${pend.length>1?'s':''} à faire</em></div></div>
   <div class="grid2"><section class="card"><h3>Cours et travail, jour par jour</h3><div class="chart">${chartWeek(w)}</div>
-    <div class="leg"><span><i style="background:var(--c-course)"></i>Cours</span><span><i style="background:var(--brand-ink)"></i>Travail fait</span><span><i class="p"></i>Travail prévu</span></div>
-    <details class="fold" style="margin-top:12px"><summary style="font-size:14px">Voir en tableau</summary><div class="tw"><table class="t"><thead><tr><th>Jour</th><th>Cours</th><th>Fait</th><th>Prévu</th></tr></thead><tbody>${rows}</tbody></table></div></details></section>
+    <div class="leg"><span><i style="background:var(--c-course)"></i>Cours et créneaux</span><span><i style="background:var(--brand-ink)"></i>Travail fait</span><span><i class="p"></i>Travail prévu</span></div>
+    <details class="fold" style="margin-top:12px"><summary style="font-size:14px">Voir en tableau</summary><div class="tw"><table class="t"><thead><tr><th>Jour</th><th>Cours et créneaux</th><th>Fait</th><th>Prévu</th></tr></thead><tbody>${rows}</tbody></table></div></details></section>
    <section class="card"><h3>Avancement des échéances</h3><div class="pg">${pend.map(d=>{const dm=doneMin(d);return `<div class="pg-r" style="--c:${d.color}"><b><span>${esc(d.title)}</span><span>${Math.round(dm/d.est*100)} %</span></b><div class="bar" role="progressbar" aria-valuenow="${Math.round(dm/d.est*100)}" aria-valuemin="0" aria-valuemax="100" aria-label="${esc(d.title)}"><i style="width:${Math.min(100,dm/d.est*100)}%"></i></div><small>${fmtDur(dm)} faites sur ${fmtDur(d.est)} · ${relDue(d)}</small></div>`;}).join('')||'<p class="sub">Aucune échéance en cours.</p>'}</div></section></div>
   <div class="grid2"><section class="card"><h3>Charge des 14 prochains jours</h3><div class="heat">${load.slice(0,7).map(heat).join('')}</div><div class="heat" style="margin-top:4px">${load.slice(7).map(heat).join('')}</div><p class="sub" style="margin-top:10px">Plus la case est foncée, plus la journée est remplie (cours et séances de travail).</p></section>
    <section class="card"><h3>À retenir</h3><ul class="ins">
-    <li>Journée la plus chargée à venir : <b>${dayLong(busiest.d)}</b> (${fmtDur(busiest.m)}).</li>
+    ${busiest.m>0?`<li>Journée la plus chargée à venir : <b>${dayLong(busiest.d)}</b> (${fmtDur(busiest.m)}).</li>`:''}
     ${free?`<li>Prochaine journée sans cours ni séance : <b>${dayLong(free.d)}</b>.</li>`:''}
     <li>${late.length?`<b>${late.length} échéance${late.length>1?'s':''} en retard.</b> Fais-en une en priorité.`:'Aucune échéance en retard. Continue comme ça.'}</li>
     <li>${rate!=null?`Tu rends ${rate} % de tes échéances à temps.`:'Pas encore assez de données pour calculer ton taux de réussite.'}</li></ul></section></div></div>`;
@@ -672,63 +738,115 @@ function viewStats(){
 function heat(x){const l=Math.min(90,Math.round(x.m/60/9*90));return `<div style="--l:${l}%" title="${dayLong(x.d)} : ${fmtDur(x.m)}"><small>${fmt(pD(x.d),{weekday:'short'}).replace('.','').slice(0,3)}</small>${pD(x.d).getDate()}</div>`;}
 
 /* ---------- Paramètres ---------- */
+function pushInfo(){
+  let ok=false;try{ok='Notification' in window&&'serviceWorker' in navigator;}catch(e){}
+  const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  return {ok,standalone,ios,perm:ok?Notification.permission:'unsupported'};
+}
 function viewSettings(){
-  const st=S.settings,th=st.theme;
+  const st=S.settings,th=st.theme,p=pushInfo();
   const sw=(k,l,sub)=>`<div class="set-r"><label for="s-${k}">${l}<small>${sub}</small></label><span class="sw"><input type="checkbox" id="s-${k}" data-set="${k}" ${st[k]?'checked':''}><span></span></span></div>`;
-  const tm=(k,l)=>`<div class="set-r"><label for="s-${k}">${l}</label><input class="in" type="time" id="s-${k}" data-time="${k}" value="${fmtT(st[k])}" step="900"></div>`;
-  const im=S.importMeta;
+  const tm=(k,l,sub)=>`<div class="set-r"><label for="s-${k}">${l}${sub?`<small>${sub}</small>`:''}</label><input class="in" type="time" id="s-${k}" data-time="${k}" value="${fmtT(st[k])}" step="900"></div>`;
+  const im=S.importMeta||{};
+  let push;
+  if(!p.ok||!U.swReady)push='<p>Les notifications ne sont pas disponibles ici. Ouvre Timezy depuis son adresse hébergée (https) pour les activer.</p>';
+  else if(p.ios&&!p.standalone)push='<p>Sur iPhone, les notifications fonctionnent seulement depuis l’écran d’accueil. Dans Safari, touche <b>Partager</b>, puis <b>Sur l’écran d’accueil</b>. Ouvre ensuite Timezy depuis l’icône créée et reviens ici.</p>';
+  else if(p.perm==='denied')push='<p>Les notifications sont bloquées pour Timezy. Autorise-les dans Réglages › Notifications › Timezy (iPhone), ou dans les réglages du site de ton navigateur.</p>';
+  else if(p.perm!=='granted')push=`<p>Reçois une notification avant tes cours, séances, créneaux, et le jour de tes rappels.</p><div class="btns"><button class="btn" data-act="pushOn">${ic('bell')}Activer les notifications</button></div>`;
+  else push=`${sw('push','Recevoir les notifications','Cours, séances, créneaux, échéances et rappels')}<div class="btns" style="margin-top:10px"><button class="btn ghost sm" data-act="pushTest">Envoyer une notification de test</button></div>`;
   return `<div class="wrap" style="max-width:720px"><div class="head"><div><h1 class="h1">Compte et paramètres</h1></div></div>
   <section class="sec"><div class="who"><div class="av">${esc((st.name||'É').trim().charAt(0).toUpperCase())}</div><div style="flex:1;min-width:0"><label class="sr" for="s-name">Prénom</label><input class="in" id="s-name" data-name placeholder="Ton prénom" value="${esc(st.name)}" maxlength="30"></div></div></section>
-  <section class="sec"><h2>Emploi du temps</h2><p>Importe l’export de ton application (Time Calendar, ADE, Google Agenda…) au format <code>.ics</code>, ou un fichier <code>.csv</code> avec les colonnes Titre, Jour (lundi… ou une date), Début, Fin, Lieu.</p>
-    <div class="btns"><label class="btn" for="file-in" tabindex="0" id="imp-l">${ic('up')}Importer mon emploi du temps</label><input type="file" id="file-in" class="sr" accept=".ics,.csv,text/calendar,text/csv"><button class="btn ghost" data-act="sample">Charger l’exemple</button><button class="btn ghost" data-act="clearTT">Vider</button></div><form class="btns" style="margin-top:12px" data-url-form><label class="sr" for="url-in">Lien du calendrier</label><input class="in" id="url-in" type="url" required placeholder="https://…/calendrier.ics" style="flex:1;min-width:200px"><button class="btn ghost" type="submit">Importer le lien</button></form>
-    ${U.msg?`<div class="msg ${U.msg.ok?'':'bad'}" role="status">${esc(U.msg.t)}</div>`:''}
+  <section class="sec"><h2>Emploi du temps</h2><p>Importe l’export de ton application (Time Calendar, ADE, Google Agenda…) au format <code>.ics</code>, ou un fichier <code>.csv</code> avec les colonnes Titre, Jour (lundi… ou une date), Début, Fin, Lieu. Tu peux aussi coller un lien (planning ADE, fichier <code>.ics</code> sur GitHub).</p>
+    <div class="btns"><label class="btn" for="file-in" tabindex="0" id="imp-l">${ic('up')}Importer mon emploi du temps</label><input type="file" id="file-in" class="sr" accept=".ics,.csv,text/calendar,text/csv"><button class="btn ghost" data-act="sample">Charger l’exemple</button><button class="btn ghost" data-act="clearTT">Vider</button></div>${urlForm()}${msgBox()}
     <p style="margin:12px 0 0">Actuellement : <b>${S.events.length?esc(im.label||'Importé')+' · '+S.events.length+' cours':'aucun cours'}</b></p></section>
   <section class="sec"><h2>Apparence</h2><p>Choisis le thème de l’application.</p><div class="seg" role="radiogroup" aria-label="Thème">${[['dark','Sombre'],['light','Clair'],['system','Système']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" data-act="theme" data-v="${k}">${l}</button>`).join('')}</div></section>
   <section class="sec"><h2>Planification</h2><p>Les séances de travail sont placées en journée, hors pause déjeuner. Tôt le matin et tard le soir ne servent qu’en dernier recours.</p>
     ${tm('dayStart','Début de journée')}${tm('lunchS','Début de pause déjeuner')}${tm('lunchE','Fin de pause déjeuner')}${tm('dayEnd','Fin de journée')}
     <div class="set-r"><label for="s-max">Durée maximale d’une séance</label><select class="in" id="s-max" data-max>${[60,90,120].map(m=>`<option value="${m}" ${st.maxSession===m?'selected':''}>${fmtDur(m)}</option>`).join('')}</select></div></section>
-  <section class="sec"><h2>Rappels</h2>${sw('remindSession','Séances et cours','Prévenir une heure avant')}${sw('remindDue','Échéances','Prévenir 48 h avant la date limite')}</section>
-  <section class="sec"><h2>Données</h2><p>Les échéances et l’emploi du temps sont enregistrés dans ce navigateur. L’exemple fournit des données fictives pour la démonstration.</p><button class="btn danger" data-act="reset">Réinitialiser avec l’exemple</button></section>
+  <section class="sec"><h2>Rappels</h2>${sw('remindSession','Séances, créneaux et cours','Prévenir une heure avant')}${sw('remindDue','Échéances','Prévenir 48 h avant la date limite')}${tm('reminderT','Heure des rappels « toute la journée »','Le jour même, à cette heure')}</section>
+  <section class="sec"><h2>Notifications sur ce téléphone</h2>${push}<p style="margin:12px 0 0;font-size:13px">Les notifications s’affichent tant que Timezy est ouvert ou récemment utilisé. Pour en recevoir app fermée, il faudrait un serveur d’envoi (Web Push), qui n’est pas inclus dans cette version.</p></section>
+  <section class="sec"><h2>Données</h2><p>Les échéances et l’emploi du temps sont enregistrés dans ce navigateur, sur cet appareil.</p><button class="btn danger" data-act="reset">Tout effacer et recommencer</button></section>
   <p class="sub" style="text-align:center">Timezy - Projet</p></div>`;
 }
 /* ---------- Feuilles (formulaire, rappels, détail) ---------- */
-function openSheet(html){U.sheet=true;$('#sheet-root').innerHTML=`<div class="sheet-bg" data-act="bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Fenêtre">${html}</div></div>`;const f=$('#sheet-root input,#sheet-root textarea,#sheet-root button.sq');}
+function openSheet(html){U.sheet=true;$('#sheet-root').innerHTML=`<div class="sheet-bg" data-act="bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Fenêtre">${html}</div></div>`;}
 function closeSheet(){U.sheet=null;U.form=null;$('#sheet-root').innerHTML='';}
 const shHead=t=>`<div class="sheet-h"><h2>${t}</h2><button class="icon-btn" data-act="close" aria-label="Fermer">${ic('x')}</button></div>`;
 
-function openForm(){
+/* Formulaire : échéance (deadline à répartir), créneau (plage réservée), rappel (pour un jour) */
+function openForm(kind){
   const used=S.deadlines.filter(d=>!d.done).map(d=>d.color);
-  U.form={id:'preview',title:'',desc:'',est:120,due:addD(todayS(),3),dueT:1080,color:PAL.find(c=>!used.includes(c))||PAL[0],done:false,doneAt:null};
+  U.form={kind:kind||'deadline',id:'preview',title:'',desc:'',est:120,due:addD(todayS(),3),dueT:1080,s:1140,e:1200,allDay:true,rT:720,touched:false,
+    color:PAL.find(c=>!used.includes(c))||PAL[0],done:false,doneAt:null};
   openSheet(formHtml());refreshPreview();setTimeout(()=>{const i=$('#f-title');i&&i.focus();},30);
 }
+function switchKind(k){
+  const f=U.form;f.kind=k;
+  if(!f.touched)f.due=addD(todayS(),k==='deadline'?3:1);
+  $('.sheet').innerHTML=formHtml();refreshPreview();
+}
 function formHtml(){
-  const f=U.form;
-  return `${shHead('Nouvelle échéance')}<form id="dl-form" novalidate>
-   <div class="fld"><label for="f-title">Titre</label><input class="in" id="f-title" maxlength="80" placeholder="Ex. Rapport de TP de physique" value="${esc(f.title)}" autocomplete="off"></div>
-   <div class="fld"><label for="f-desc">Ce qu’il faut faire</label><textarea class="in" id="f-desc" maxlength="300" placeholder="Détails, consignes, fichiers à rendre…">${esc(f.desc)}</textarea></div>
-   <div class="fld"><span class="lb" id="lb-est">Temps estimé pour la réaliser</span><div class="step" role="group" aria-labelledby="lb-est"><button type="button" class="sq" data-act="est" data-n="-15" aria-label="Moins 15 minutes">${ic('minus')}</button><output id="f-est">${fmtDur(f.est)}</output><button type="button" class="sq" data-act="est" data-n="15" aria-label="Plus 15 minutes">${ic('plus')}</button></div>
+  const f=U.form,k=f.kind;
+  const ph={deadline:'Ex. Rapport de TP de physique',slot:'Ex. Sport',reminder:'Ex. Prévoir un pique-nique pour midi'}[k];
+  const kinds=[['deadline','Échéance'],['slot','Créneau'],['reminder','Rappel']];
+  const fields={
+   deadline:`<div class="fld"><span class="lb" id="lb-est">Temps estimé pour la réaliser</span><div class="step" role="group" aria-labelledby="lb-est"><button type="button" class="sq" data-act="est" data-n="-15" aria-label="Moins 15 minutes">${ic('minus')}</button><output id="f-est">${fmtDur(f.est)}</output><button type="button" class="sq" data-act="est" data-n="15" aria-label="Plus 15 minutes">${ic('plus')}</button></div>
      <div class="pre">${[30,60,120,240,480].map(m=>`<button type="button" data-act="estSet" data-n="${m}">${fmtDur(m)}</button>`).join('')}</div></div>
-   <div class="row2"><div class="fld"><label for="f-due">Date limite</label><input class="in" type="date" id="f-due" min="${todayS()}" value="${f.due}"></div><div class="fld"><label for="f-dueT">Heure limite</label><input class="in" type="time" id="f-dueT" value="${fmtT(f.dueT)}" step="900"></div></div>
+     <div class="row2"><div class="fld"><label for="f-due">Date limite</label><input class="in" type="date" id="f-due" min="${todayS()}" value="${f.due}"></div><div class="fld"><label for="f-dueT">Heure limite</label><input class="in" type="time" id="f-dueT" value="${fmtT(f.dueT)}" step="900"></div></div>`,
+   slot:`<div class="fld"><label for="f-due">Jour</label><input class="in" type="date" id="f-due" min="${todayS()}" value="${f.due}"></div>
+     <div class="row2"><div class="fld"><label for="f-s">De</label><input class="in" type="time" id="f-s" value="${fmtT(f.s)}" step="900"></div><div class="fld"><label for="f-e">À</label><input class="in" type="time" id="f-e" value="${fmtT(f.e)}" step="900"></div></div>`,
+   reminder:`<div class="fld"><label for="f-due">Jour</label><input class="in" type="date" id="f-due" min="${todayS()}" value="${f.due}"></div>
+     <div class="sw-row"><label for="f-all" style="font-weight:700;font-size:13px;color:var(--fg-2)">Toute la journée</label><span class="sw"><input type="checkbox" id="f-all" ${f.allDay?'checked':''}><span></span></span></div>
+     ${f.allDay?'':`<div class="fld"><label for="f-rT">Heure</label><input class="in" type="time" id="f-rT" value="${fmtT(f.rT)}" step="900"></div>`}`
+  }[k];
+  return `${shHead('Ajouter')}<form id="dl-form" novalidate>
+   <div class="fld"><span class="lb" id="lb-kind">Type</span><div class="seg" role="radiogroup" aria-labelledby="lb-kind">${kinds.map(([v,l])=>`<button type="button" role="radio" aria-checked="${k===v}" data-act="kind" data-v="${v}">${l}</button>`).join('')}</div></div>
+   <div class="fld"><label for="f-title">Titre</label><input class="in" id="f-title" maxlength="80" placeholder="${ph}" value="${esc(f.title)}" autocomplete="off"></div>
+   <div class="fld"><label for="f-desc">${k==='deadline'?'Ce qu’il faut faire':'Détails (facultatif)'}</label><textarea class="in" id="f-desc" maxlength="300" placeholder="${k==='deadline'?'Détails, consignes, fichiers à rendre…':'Une précision, un lieu…'}">${esc(f.desc)}</textarea></div>
+   ${fields}
    <div class="fld"><span class="lb" id="lb-col">Couleur</span><div class="sw-c" role="radiogroup" aria-labelledby="lb-col">${PAL.map((c,i)=>`<button type="button" role="radio" aria-checked="${f.color===c}" aria-label="${PAL_N[i]}" style="--c:${c}" data-act="color" data-c="${c}">${ic('check')}</button>`).join('')}</div></div>
    <div class="preview" id="f-prev" aria-live="polite"></div><div class="err" id="f-err" role="alert" hidden></div>
-   <div class="actions"><button type="button" class="btn ghost" data-act="close">Annuler</button><button type="submit" class="btn">${ic('check')}Ajouter et planifier</button></div></form>`;
+   <div class="actions"><button type="button" class="btn ghost" data-act="close">Annuler</button><button type="submit" class="btn">${ic('check')}${{deadline:'Ajouter et planifier',slot:'Ajouter le créneau',reminder:'Ajouter le rappel'}[k]}</button></div></form>`;
 }
 function refreshPreview(){
   const f=U.form,box=$('#f-prev');if(!box)return;
-  if(!f.due||f.due<todayS()||dueTs(f)<=Date.now()){box.innerHTML='<h3>Répartition prévue</h3><p class="sub" style="margin:0">Choisis une date limite à venir pour voir la répartition.</p>';return;}
+  const wrap=h=>box.innerHTML=h;
+  if(!f.due||f.due<todayS()){return wrap('<h3>Aperçu</h3><p class="sub" style="margin:0">Choisis un jour à venir.</p>');}
+  if(f.kind==='reminder')return wrap(`<h3>Aperçu</h3><p class="sub" style="margin:0">S’affichera en haut de l’accueil le ${dayLong(f.due).toLowerCase()}${f.allDay?'':' à '+fmtT(f.rT)}, avec une notification.</p>`);
+  if(f.kind==='slot'){
+    if(f.e<=f.s)return wrap('<h3>Aperçu</h3><p class="warn" style="margin:0">'+ic('alert')+'<span>L’heure de fin doit être après le début.</span></p>');
+    const hit=[...S.events.filter(e=>e.date===f.due&&e.s<f.e&&e.e>f.s).map(e=>`${e.title} (${fmtT(e.s)}–${fmtT(e.e)})`),
+      ...S.deadlines.filter(x=>x.kind==='slot'&&!x.done&&x.due===f.due&&x.s<f.e&&x.e>f.s).map(x=>`${x.title} (${fmtT(x.s)}–${fmtT(x.e)})`)];
+    return wrap(`<h3>Aperçu</h3>${hit.length?`<p class="warn" style="margin:0">${ic('alert')}<span>Chevauche : ${esc(hit.join(', '))}.</span></p>`:`<p class="sub" style="margin:0">${fmtDur(f.e-f.s)} réservées le ${dayLong(f.due).toLowerCase()}. Les séances de travail seront placées autour.</p>`}`);
+  }
+  if(dueTs(f)<=Date.now())return wrap('<h3>Répartition prévue</h3><p class="sub" style="margin:0">Choisis une date limite à venir pour voir la répartition.</p>');
   const p=previewPlan({...f,title:f.title||'…'});
-  box.innerHTML=`<h3>Répartition prévue</h3>${p.sessions.length?`<ul>${p.sessions.map(s=>`<li><span>${dayShort(s.date)}</span><span>${fmtT(s.s)}–${fmtT(s.e)} · ${fmtDur(s.e-s.s)}</span></li>`).join('')}</ul>`:''}${p.left?`<p class="warn" style="margin:8px 0 0">${ic('alert')}<span>${p.sessions.length?`Il manque ${fmtDur(p.left)} de temps libre avant la date limite.`:'Aucun créneau libre avant la date limite.'}</span></p>`:''}`;
+  wrap(`<h3>Répartition prévue</h3>${p.sessions.length?`<ul>${p.sessions.map(s=>`<li><span>${dayShort(s.date)}</span><span>${fmtT(s.s)}–${fmtT(s.e)} · ${fmtDur(s.e-s.s)}</span></li>`).join('')}</ul>`:''}${p.left?`<p class="warn" style="margin:8px 0 0">${ic('alert')}<span>${p.sessions.length?`Il manque ${fmtDur(p.left)} de temps libre avant la date limite.`:'Aucun créneau libre avant la date limite.'}</span></p>`:''}`);
 }
 function submitForm(){
-  const f=U.form,err=$('#f-err');
+  const f=U.form,err=$('#f-err'),k=f.kind;
   const bad=m=>{err.textContent=m;err.hidden=false;};
-  if(!f.title.trim())return bad('Donne un titre à ton échéance.');
-  if(!f.due)return bad('Choisis une date limite.');
-  if(dueTs(f)<=Date.now())return bad('La date limite est déjà passée.');
-  const d={id:uid(),title:f.title.trim(),desc:f.desc.trim(),est:f.est,due:f.due,dueT:f.dueT,color:f.color,done:false,doneAt:null};
+  if(!f.title.trim())return bad('Donne un titre.');
+  if(!f.due)return bad('Choisis un jour.');
+  const base={id:uid(),kind:k,title:f.title.trim(),desc:f.desc.trim(),due:f.due,color:f.color,done:false,doneAt:null};
+  let d;
+  if(k==='deadline'){
+    if(dueTs(f)<=Date.now())return bad('La date limite est déjà passée.');
+    d={...base,est:f.est,dueT:f.dueT};
+  }else if(k==='slot'){
+    if(f.e<=f.s)return bad('L’heure de fin doit être après le début.');
+    if(ts(f.due,f.e)<=Date.now())return bad('Ce créneau est déjà passé.');
+    d={...base,s:f.s,e:f.e,dueT:f.s};
+  }else{
+    const t=f.allDay?-1:f.rT;
+    if(!f.allDay&&ts(f.due,t)<=Date.now())return bad('Cette heure est déjà passée.');
+    d={...base,dueT:t};
+  }
   S.deadlines.push(d);replan();save();closeSheet();
-  const n=S.sessions.filter(s=>s.dl===d.id).length,miss=S.unplanned[d.id];
-  toast(miss?`Ajoutée, mais il manque ${fmtDur(miss)} de temps libre`:`Échéance ajoutée · ${n} séance${n>1?'s':''} planifiée${n>1?'s':''}`);
+  if(k==='deadline'){const n=S.sessions.filter(s=>s.dl===d.id).length,miss=S.unplanned[d.id];
+    toast(miss?`Ajoutée, mais il manque ${fmtDur(miss)} de temps libre`:`Échéance ajoutée · ${plural(n,'séance')} planifiée${n>1?'s':''}`);}
+  else toast(k==='slot'?'Créneau ajouté':'Rappel ajouté');
   render();
 }
 function openNotifs(){
@@ -738,25 +856,83 @@ function openNotifs(){
 function openDetail(k,id){
   if(k==='c'){const e=S.events.find(x=>x.id===id);if(!e)return;
     openSheet(`${shHead(esc(e.title))}<p class="sub" style="margin:0 0 6px">${dayLong(e.date)}</p><p style="margin:0 0 4px"><b>${fmtT(e.s)}–${fmtT(e.e)}</b> · ${fmtDur(e.e-e.s)}</p>${e.loc?`<p style="margin:0;color:var(--fg-2)">${esc(e.loc)}</p>`:''}<p class="sub">Cours importé depuis ton emploi du temps.</p>`);return;}
+  if(k==='x'){const x=dlOf(id);if(!x)return;
+    openSheet(`${shHead(esc(x.title))}<p class="sub" style="margin:0 0 6px">${dayLong(x.due)}</p><p style="margin:0 0 8px"><b>${fmtT(x.s)}–${fmtT(x.e)}</b> · ${fmtDur(x.e-x.s)}</p>${x.desc?`<p style="color:var(--fg-2)">${esc(x.desc)}</p>`:''}<p class="sub">Créneau réservé : les séances de travail l’évitent.</p>
+     <div class="actions"><button class="btn ghost" data-act="goDl" data-id="${x.id}">Voir dans Échéances</button><button class="btn" data-act="toggle" data-id="${x.id}" data-close="1">${ic('check')}Marquer comme fait</button></div>`);return;}
   const s=S.sessions.find(x=>x.id===id),d=s&&dlOf(s.dl);if(!d)return;
   openSheet(`${shHead('Séance de travail')}<p style="margin:0 0 4px;font:700 18px var(--font-display)">${esc(d.title)}</p><p class="sub" style="margin:0 0 8px">${dayLong(s.date)} · ${fmtT(s.s)}–${fmtT(s.e)} (${fmtDur(s.e-s.s)})</p>${d.desc?`<p style="color:var(--fg-2)">${esc(d.desc)}</p>`:''}<p class="sub">Rendu ${relDue(d)}.</p>
    <div class="actions"><button class="btn ghost" data-act="goDl" data-id="${d.id}">Voir l’échéance</button><button class="btn" data-act="sdone" data-id="${s.id}" data-close="1">${s.done?'Annuler « faite »':'Marquer comme faite'}</button></div>`);
 }
 
+/* ---------- Import par lien (ADE, GitHub…) ---------- */
+async function importUrl(raw){
+  let u=raw.trim().replace(/^webcal:/i,'https:');
+  const g=u.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
+  if(g)u=`https://raw.githubusercontent.com/${g[1]}/${g[2]}/${g[3]}`;
+  U.msg={ok:true,t:'Téléchargement du calendrier…'};render(true);
+  const tries=[u,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
+    'https://corsproxy.io/?url='+encodeURIComponent(u)];
+  let t=null;
+  for(const x of tries){
+    try{
+      const r=await fetch(x);if(!r.ok)continue;
+      const s=await r.text();
+      if(/BEGIN:VCALENDAR/i.test(s)||/\.csv(\?|$)/i.test(u)){t=s;break;}
+    }catch(err){}
+  }
+  if(t==null){U.msg={ok:false,t:'Lien inaccessible. Vérifie l’adresse, ou télécharge le fichier et importe-le directement.'};render(true);return;}
+  const csv=/\.csv(\?|$)/i.test(u);
+  let host='lien';try{host=new URL(u).hostname;}catch(e){}
+  doImport(new File([t],host+(csv?'.csv':'.ics')));
+}
+
+/* ---------- Notifications téléphone (PWA) ---------- */
+async function showLocal(title,body,tag){
+  try{if(U.swReady){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,tag,icon:'icon-192.png',badge:'icon-192.png',data:{url:'./'}});return true;}}catch(e){}
+  try{new Notification(title,{body,tag});return true;}catch(e){return false;}
+}
+function pushReady(){try{return S.settings.push&&'Notification' in window&&Notification.permission==='granted'&&U.swReady;}catch(e){return false;}}
+function checkPush(silent){
+  if(!pushReady())return;
+  for(const n of notifs().filter(x=>x.push)){
+    if(S.pushed.includes(n.id))continue;
+    S.pushed.push(n.id);if(!silent)showLocal(n.t,n.s,n.id);
+  }
+  if(S.pushed.length>300)S.pushed=S.pushed.slice(-200);
+  save();
+}
+async function pushOn(){
+  try{
+    const r=await Notification.requestPermission();
+    if(r==='granted'){S.settings.push=true;checkPush(true);save();toast('Notifications activées');showLocal('Timezy','Les notifications sont activées.','welcome');}
+    else toast('Notifications refusées');
+  }catch(e){toast('Notifications indisponibles ici');}
+  render(true);
+}
+function registerSW(){
+  try{
+    if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
+    navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(()=>{U.swReady=true;if(U.view==='settings')render(true);checkPush();}).catch(()=>{});
+  }catch(e){}
+}
+
 /* ---------- Actions ---------- */
 function toggleDone(id){
   const d=dlOf(id),now=Date.now();if(!d)return;
-  if(!d.done){d.done=true;d.doneAt=now;
+  if(!isDl(d)){d.done=!d.done;d.doneAt=d.done?now:null;}
+  else if(!d.done){d.done=true;d.doneAt=now;
     S.sessions=S.sessions.filter(s=>s.dl!==id||s.done||ts(s.date,s.e)<=now).map(s=>s.dl===id?{...s,done:true}:s);}
   else{d.done=false;d.doneAt=null;}
   replan();save();render();
 }
 function applyTheme(){const t=S.settings.theme,r=document.documentElement;if(t==='system'){if(U.themeTouched)r.removeAttribute('data-theme');}else r.setAttribute('data-theme',t);}
-function go(v){U.view=v;U.scrollPending=true;render();}
-function sample(){S.events=sampleCourses();S.importMeta={source:'exemple',label:'Exemple (semaine type, licence informatique)'};replan();save();U.msg={ok:true,t:'Emploi du temps d’exemple chargé.'};render();}
+function go(v){if(v!==U.view)U.msg=null;U.view=v;U.scrollPending=true;render();}
+function sample(){S.events=sampleCourses();S.importMeta={source:'exemple',label:'Exemple (semaine type, licence informatique)'};S.skipOnboarding=true;replan();save();U.msg={ok:true,t:'Emploi du temps d’exemple chargé.'};render();}
 
 document.addEventListener('click',e=>{
-  const el=e.target.closest('[data-act]');if(!el){if(U.delId){U.delId=null;render();}return;}
+  const el=e.target.closest('[data-act]');if(!el){if(U.delId){U.delId=null;render(true);}return;}
   const a=el.dataset.act,id=el.dataset.id;
   if(a==='bg'){if(e.target===el)closeSheet();return;}
   if(a!=='del'&&U.delId){U.delId=null;}
@@ -765,17 +941,19 @@ document.addEventListener('click',e=>{
    case 'settings':closeSheet();go('settings');break;
    case 'bell':openNotifs();break;
    case 'close':closeSheet();break;
-   case 'add':openForm();break;
+   case 'add':openForm(U.view==='home'?'deadline':undefined);break;
+   case 'kind':switchKind(el.dataset.v);break;
+   case 'skip':S.skipOnboarding=true;save();render();break;
    case 'day':U.date=el.dataset.d;U.scrollPending=true;render();break;
    case 'week':U.date=addD(U.date,7*+el.dataset.n);U.scrollPending=true;render();break;
    case 'ev':openDetail(el.dataset.k,id);break;
    case 'goDl':closeSheet();U.exp[id]=true;go('deadlines');setTimeout(()=>{const t=$(`[data-act="toggle"][data-id="${id}"]`);t&&t.closest('.dl').scrollIntoView({block:'center'});},30);break;
-   case 'toggle':toggleDone(id);break;
+   case 'toggle':toggleDone(id);if(el.dataset.close)closeSheet();break;
    case 'expand':U.exp[id]=!U.exp[id];render(true);break;
    case 'foldDone':U.exp._done=!U.exp._done;break;
    case 'sdone':{const s=S.sessions.find(x=>x.id===id);if(s){s.done=!s.done;replan();save();}if(el.dataset.close)closeSheet();render(true);break;}
    case 'del':
-     if(U.delId===id){S.deadlines=S.deadlines.filter(d=>d.id!==id);S.sessions=S.sessions.filter(s=>s.dl!==id);U.delId=null;replan();save();toast('Échéance supprimée');render(true);}
+     if(U.delId===id){S.deadlines=S.deadlines.filter(d=>d.id!==id);S.sessions=S.sessions.filter(s=>s.dl!==id);U.delId=null;replan();save();toast('Supprimé');render(true);}
      else{U.delId=id;render(true);clearTimeout(U.delT);U.delT=setTimeout(()=>{U.delId=null;render(true);},3500);}break;
    case 'est':U.form.est=Math.min(2400,Math.max(15,U.form.est+ +el.dataset.n));$('#f-est').textContent=fmtDur(U.form.est);refreshPreview();break;
    case 'estSet':U.form.est=+el.dataset.n;$('#f-est').textContent=fmtDur(U.form.est);refreshPreview();break;
@@ -784,35 +962,48 @@ document.addEventListener('click',e=>{
    case 'readAll':notifs().forEach(n=>{if(!S.readNotifs.includes(n.id))S.readNotifs.push(n.id);});save();closeSheet();render(true);break;
    case 'theme':S.settings.theme=el.dataset.v;U.themeTouched=true;applyTheme();save();render(true);break;
    case 'sample':sample();break;
-   case 'clearTT':S.events=[];S.importMeta={source:'vide',label:''};replan();save();U.msg={ok:true,t:'Emploi du temps vidé.'};render(true);break;
-   case 'reset':S=seed();replan();save();U.msg=null;U.themeTouched=false;toast('Données d’exemple rétablies');render();break;
+   case 'clearTT':S.events=[];S.importMeta={source:'vide',label:''};S.skipOnboarding=true;replan();save();U.msg={ok:true,t:'Emploi du temps vidé.'};render(true);break;
+   case 'reset':S=seed();replan();save();U.msg=null;U.themeTouched=false;toast('Données effacées');go('home');break;
+   case 'pushOn':pushOn();break;
+   case 'pushTest':showLocal('Timezy','Ceci est une notification de test.','test'+Date.now()).then(ok=>toast(ok?'Notification envoyée':'Impossible d’envoyer la notification'));break;
   }
 });
 document.addEventListener('input',e=>{
   const t=e.target;if(!U.form)return;
   if(t.id==='f-title')U.form.title=t.value;else if(t.id==='f-desc')U.form.desc=t.value;
 });
+const toMin=v=>{const[h,m]=v.split(':').map(Number);return h*60+m;};
 document.addEventListener('change',e=>{
   const t=e.target;
   if(U.form){
-    if(t.id==='f-due'){U.form.due=t.value;refreshPreview();}
-    else if(t.id==='f-dueT'&&t.value){const[h,m]=t.value.split(':').map(Number);U.form.dueT=h*60+m;refreshPreview();}
+    const f=U.form;
+    if(t.id==='f-due'){f.due=t.value;f.touched=true;}
+    else if(t.id==='f-dueT'&&t.value)f.dueT=toMin(t.value);
+    else if(t.id==='f-s'&&t.value){f.s=toMin(t.value);if(f.e<=f.s){f.e=Math.min(f.s+60,1439);const i=$('#f-e');if(i)i.value=fmtT(f.e);}}
+    else if(t.id==='f-e'&&t.value)f.e=toMin(t.value);
+    else if(t.id==='f-rT'&&t.value)f.rT=toMin(t.value);
+    else if(t.id==='f-all'){f.allDay=t.checked;$('.sheet').innerHTML=formHtml();}
+    refreshPreview();
     return;}
   if(t.id==='file-in'&&t.files[0]){doImport(t.files[0]);t.value='';return;}
   if(t.dataset.set){S.settings[t.dataset.set]=t.checked;save();renderShell();return;}
   if(t.dataset.name!==undefined){S.settings.name=t.value;save();render(true);return;}
   if(t.dataset.max){S.settings.maxSession=+t.value;replan();save();toast('Planning mis à jour');return;}
   if(t.dataset.time&&t.value){
-    const old=S.settings[t.dataset.time],[h,m]=t.value.split(':').map(Number);S.settings[t.dataset.time]=h*60+m;
+    const old=S.settings[t.dataset.time];S.settings[t.dataset.time]=toMin(t.value);
     const s=S.settings;
     if(!(s.dayStart+60<s.lunchS&&s.lunchS<s.lunchE&&s.lunchE<s.dayEnd-120)){S.settings[t.dataset.time]=old;t.value=fmtT(old);toast('Horaires incohérents : la pause doit tenir dans la journée');return;}
-    replan();save();toast('Planning mis à jour');}
+    replan();save();toast('Réglage enregistré');}
 });
-document.addEventListener('submit',e=>{if(e.target.id==='dl-form'){e.preventDefault();submitForm();}});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='dl-form'){e.preventDefault();submitForm();}
+  else if(e.target.matches('[data-url-form]')){e.preventDefault();importUrl($('#url-in').value);}
+});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&U.sheet)closeSheet();
   if((e.key==='Enter'||e.key===' ')&&e.target.id==='imp-l'){e.preventDefault();$('#file-in').click();}
 });
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){tickClock();checkPush();renderShell();}});
 
 /* ---------- Rendu & démarrage ---------- */
 function render(keepScroll){
@@ -830,44 +1021,24 @@ function render(keepScroll){
 }
 function init(){
   S=load();
-  if(!S||S.v!==1)S=seed();
-  else if(S.importMeta&&S.importMeta.source==='exemple'&&!S.events.some(e=>e.date>addD(todayS(),14)))S.events=sampleCourses();
+  if(!S||S.v!==2)S=seed();
+  else{
+    S.settings={...seed().settings,...S.settings};S.pushed=S.pushed||[];
+    if(S.importMeta&&S.importMeta.source==='exemple'&&!S.events.some(e=>e.date>addD(todayS(),14)))S.events=sampleCourses();
+  }
   S.readNotifs=S.readNotifs||[];
-  applyTheme();replan();save();render();
+  applyTheme();replan();save();render();registerSW();
   let lastMiss=-1;
   setInterval(()=>{
     tickClock();
     const now=Date.now(),miss=S.sessions.filter(s=>!s.done&&ts(s.date,s.e)<=now).length;
     if(lastMiss!==-1&&miss!==lastMiss){replan();save();}
     lastMiss=miss;
-    renderShell();
+    renderShell();checkPush();
     const nl=$('#now-l');if(nl&&U.view==='home'&&!U.sheet){render(true);}
   },30000);
 }
-document.addEventListener('submit',async e=>{
-  if(!e.target.matches('[data-url-form]'))return;
-  e.preventDefault();
-  let u=$('#url-in').value.trim().replace(/^webcal:/i,'https:');
-  const g=u.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
-  if(g)u=`https://raw.githubusercontent.com/${g[1]}/${g[2]}/${g[3]}`;
-  const tries=[u,
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
-    'https://corsproxy.io/?url='+encodeURIComponent(u)];
-  let t=null;
-  for(const x of tries){
-    try{
-      const r=await fetch(x);if(!r.ok)continue;
-      const s=await r.text();
-      if(/BEGIN:VCALENDAR/i.test(s)||/\.csv(\?|$)/i.test(u)){t=s;break;}
-    }catch(err){}
-  }
-  if(t==null){U.msg={ok:false,t:'Lien inaccessible. Vérifie l’adresse, ou télécharge le fichier et importe-le directement.'};render(true);return;}
-  const csv=/\.csv(\?|$)/i.test(u);
-  doImport(new File([t],new URL(u).hostname+(csv?'.csv':'.ics')));
-});
 init();
 })();
 </script>
-
 </body></html>
