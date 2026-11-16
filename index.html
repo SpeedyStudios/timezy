@@ -1030,14 +1030,15 @@ async function fetchCal(raw){
   let u=raw.trim().replace(/^webcal:/i,'https:');
   const g=u.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
   if(g)u=`https://raw.githubusercontent.com/${g[1]}/${g[2]}/${g[3]}`;
-  const bust=u+(u.includes('?')?'&':'?')+'_='+Date.now();
-  const tries=[bust,u,
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(bust),
+  /* Pas d'en-têtes personnalisés ni de paramètre ajouté : ADE et les proxys gratuits les refusent (CORS). */
+  const tries=[u,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
     'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
-    'https://corsproxy.io/?url='+encodeURIComponent(u)];
+    'https://corsproxy.io/?url='+encodeURIComponent(u),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(u+'&_='+Date.now())];
   for(const x of tries){
     try{
-      const r=await fetch(x,{cache:'no-store'});if(!r.ok)continue;
+      const r=await fetch(x);if(!r.ok)continue;
       const t=await r.text();
       if(/BEGIN:VCALENDAR/i.test(t)||/\.csv(\?|$)/i.test(u)){
         const csv=/\.csv(\?|$)/i.test(u);let host='lien';try{host=new URL(u).hostname;}catch(e){}
