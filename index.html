@@ -558,25 +558,15 @@ function parseCSV(text){
   }
   return out;
 }
-const evSig=l=>l.map(e=>e.date+e.s+'-'+e.e+e.title+(e.loc||'')).sort().join('|');
-async function doImport(file,opt){
-  opt=opt||{};
+async function doImport(file){
   try{
     const text=await file.text();
     const ev=/\.csv$/i.test(file.name)||/csv/.test(file.type)?parseCSV(text):parseICS(text);
     if(!ev.length)throw new Error('Aucun cours trouvé dans ce fichier. Vérifie qu’il s’agit d’un export .ics ou .csv.');
-    const changed=evSig(ev)!==evSig(S.events);
-    const manual=new Set(S.sessions.filter(x=>x.manual).map(x=>x.id));
     S.events=ev;const ds=ev.map(e=>e.date).sort();
-    S.importMeta={source:opt.url?'lien':'fichier',label:file.name,count:ev.length,from:ds[0],to:ds[ds.length-1],url:opt.url||'',at:Date.now()};
-    if(changed||!opt.silent)replan();
-    save();
-    if(opt.silent){
-      if(changed){toast('Emploi du temps mis à jour');if(!U.sheet)render(true);}
-      return;
-    }
-    toast(`${ev.length} cours importés`);U.msg={ok:true,t:`${ev.length} cours importés depuis « ${file.name} » (du ${dayShort(ds[0])} au ${dayShort(ds[ds.length-1])}). Les séances de travail ont été replanifiées.${opt.url?' Le lien sera actualisé à chaque ouverture de l’app.':''}`};
-  }catch(err){if(opt.silent)return;U.msg={ok:false,t:err.message||'Import impossible.'};}
+    S.importMeta={source:'fichier',label:file.name,count:ev.length,from:ds[0],to:ds[ds.length-1]};
+    replan();save();toast(`${ev.length} cours importés`);U.msg={ok:true,t:`${ev.length} cours importés depuis « ${file.name} » (du ${dayShort(ds[0])} au ${dayShort(ds[ds.length-1])}). Les séances de travail ont été replanifiées.`};
+  }catch(err){U.msg={ok:false,t:err.message||'Import impossible.'};}
   render();
 }
 
@@ -807,7 +797,7 @@ function viewSettings(){
   <section class="sec"><div class="who"><div class="av">${esc((st.name||'É').trim().charAt(0).toUpperCase())}</div><div style="flex:1;min-width:0"><label class="sr" for="s-name">Prénom</label><input class="in" id="s-name" data-name placeholder="Ton prénom" value="${esc(st.name)}" maxlength="30"></div></div></section>
   <section class="sec"><h2>Emploi du temps</h2><p>Importe l’export de ton application (Time Calendar, ADE, Google Agenda…) au format <code>.ics</code>, ou un fichier <code>.csv</code> avec les colonnes Titre, Jour (lundi… ou une date), Début, Fin, Lieu. Tu peux aussi coller un lien (planning ADE, fichier <code>.ics</code> sur GitHub).</p>
     <div class="btns"><label class="btn" for="file-in" tabindex="0" id="imp-l">${ic('up')}Importer mon emploi du temps</label><input type="file" id="file-in" class="sr" accept=".ics,.csv,text/calendar,text/csv"><button class="btn ghost" data-act="sample">Charger l’exemple</button><button class="btn ghost" data-act="clearTT">Vider</button></div>${urlForm()}${msgBox()}
-    <p style="margin:12px 0 0">Actuellement : <b>${S.events.length?esc(im.label||'Importé')+' · '+S.events.length+' cours':'aucun cours'}</b></p>${im.url?`<p style="margin:8px 0 0;font-size:13px">Lien actualisé automatiquement${im.at?' · dernière mise à jour à '+fmtT(new Date(im.at).getHours()*60+new Date(im.at).getMinutes())+' le '+dayShort(dstr(new Date(im.at))):''}.</p><div class="btns" style="margin-top:8px"><button class="btn ghost sm" data-act="refreshTT">Actualiser maintenant</button></div>`:''}</section>
+    <p style="margin:12px 0 0">Actuellement : <b>${S.events.length?esc(im.label||'Importé')+' · '+S.events.length+' cours':'aucun cours'}</b></p></section>
   <section class="sec"><h2>Apparence</h2><p>Choisis le thème de l’application.</p><div class="seg" role="radiogroup" aria-label="Thème">${[['dark','Sombre'],['light','Clair'],['system','Système']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" data-act="theme" data-v="${k}">${l}</button>`).join('')}</div></section>
   <section class="sec"><h2>Planification</h2><p>Les séances de travail sont placées en journée, hors pause déjeuner. Tôt le matin et tard le soir ne servent qu’en dernier recours.</p>
     ${tm('dayStart','Début de journée')}${tm('lunchS','Début de pause déjeuner')}${tm('lunchE','Fin de pause déjeuner')}${sw('dinner','Prendre en compte le dîner','Aucune séance de travail pendant ce repas')}${st.dinner?tm('dinS','Début du dîner')+tm('dinE','Fin du dîner'):''}${tm('dayEnd','Fin de journée')}
@@ -1026,43 +1016,27 @@ function saveMove(){
 }
 
 /* ---------- Import par lien (ADE, GitHub…) ---------- */
-async function fetchCal(raw){
+async function importUrl(raw){
   let u=raw.trim().replace(/^webcal:/i,'https:');
   const g=u.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
   if(g)u=`https://raw.githubusercontent.com/${g[1]}/${g[2]}/${g[3]}`;
-  /* Pas d'en-têtes personnalisés ni de paramètre ajouté : ADE et les proxys gratuits les refusent (CORS). */
+  U.msg={ok:true,t:'Téléchargement du calendrier…'};render(true);
   const tries=[u,
     'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
     'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
-    'https://corsproxy.io/?url='+encodeURIComponent(u),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(u+'&_='+Date.now())];
+    'https://corsproxy.io/?url='+encodeURIComponent(u)];
+  let t=null;
   for(const x of tries){
     try{
       const r=await fetch(x);if(!r.ok)continue;
-      const t=await r.text();
-      if(/BEGIN:VCALENDAR/i.test(t)||/\.csv(\?|$)/i.test(u)){
-        const csv=/\.csv(\?|$)/i.test(u);let host='lien';try{host=new URL(u).hostname;}catch(e){}
-        return new File([t],host+(csv?'.csv':'.ics'));
-      }
+      const s=await r.text();
+      if(/BEGIN:VCALENDAR/i.test(s)||/\.csv(\?|$)/i.test(u)){t=s;break;}
     }catch(err){}
   }
-  return null;
-}
-async function importUrl(raw){
-  U.msg={ok:true,t:'Téléchargement du calendrier…'};render(true);
-  const f=await fetchCal(raw);
-  if(!f){U.msg={ok:false,t:'Lien inaccessible. Vérifie l’adresse, ou télécharge le fichier et importe-le directement.'};render(true);return;}
-  doImport(f,{url:raw.trim()});
-}
-/* Actualisation automatique du calendrier lié : à l'ouverture, au retour sur l'app, puis toutes les 15 min. */
-let refreshing=false;
-async function autoRefresh(force){
-  const im=S.importMeta||{};
-  if(!im.url||refreshing||!navigator.onLine)return;
-  if(!force&&Date.now()-(im.at||0)<3*60e3)return;
-  refreshing=true;
-  try{const f=await fetchCal(im.url);if(f)await doImport(f,{url:im.url,silent:true});}catch(e){}
-  refreshing=false;
+  if(t==null){U.msg={ok:false,t:'Lien inaccessible. Vérifie l’adresse, ou télécharge le fichier et importe-le directement.'};render(true);return;}
+  const csv=/\.csv(\?|$)/i.test(u);
+  let host='lien';try{host=new URL(u).hostname;}catch(e){}
+  doImport(new File([t],host+(csv?'.csv':'.ics')));
 }
 
 /* ---------- Notifications téléphone (PWA) ---------- */
@@ -1146,7 +1120,6 @@ document.addEventListener('click',e=>{
    case 'readAll':notifs().forEach(n=>{if(!S.readNotifs.includes(n.id))S.readNotifs.push(n.id);});save();closeSheet();render(true);break;
    case 'theme':S.settings.theme=el.dataset.v;U.themeTouched=true;applyTheme();save();render(true);break;
    case 'sample':sample();break;
-   case 'refreshTT':toast('Actualisation…');autoRefresh(true).then(()=>{U.msg={ok:true,t:'Calendrier actualisé.'};render(true);});break;
    case 'clearTT':S.events=[];S.importMeta={source:'vide',label:''};S.skipOnboarding=true;replan();save();U.msg={ok:true,t:'Emploi du temps vidé.'};render(true);break;
    case 'reset':S=seed();replan();save();U.msg=null;U.themeTouched=false;toast('Données effacées');go('home');break;
    case 'pushOn':pushOn();break;
@@ -1201,7 +1174,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&U.sheet)closeSheet();
   if((e.key==='Enter'||e.key===' ')&&e.target.id==='imp-l'){e.preventDefault();$('#file-in').click();}
 });
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){tickClock();checkPush();renderShell();autoRefresh();}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){tickClock();checkPush();renderShell();}});
 
 /* ---------- Rendu & démarrage ---------- */
 function render(keepScroll){
@@ -1225,7 +1198,7 @@ function init(){
     if(S.importMeta&&S.importMeta.source==='exemple'&&!S.events.some(e=>e.date>addD(todayS(),14)))S.events=sampleCourses();
   }
   S.readNotifs=S.readNotifs||[];S.series=S.series||{};extendSeries();
-  applyTheme();replan();save();render();registerSW();autoRefresh(true);setInterval(()=>autoRefresh(),15*60e3);
+  applyTheme();replan();save();render();registerSW();
   let lastMiss=-1;
   setInterval(()=>{
     tickClock();
